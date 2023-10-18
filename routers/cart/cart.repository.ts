@@ -7,7 +7,6 @@ import { CartObject } from "./cart.service";
 import { ProductEntity } from '../../schemas/product.entity';
 
 export const getCart: (userId: string) => CartEntity = (userId: string) => {
-    console.log('final cart', cart);
     return cart[userId]
 }
 

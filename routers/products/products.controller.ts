@@ -3,17 +3,17 @@ import { getAllProducts, getSingleProduct } from './products.service';
 
 export const router = express.Router();
 
-router.get('/', (req: Request, resp: Response) => {
-    const products = getAllProducts();
+router.get('/', async (req: Request, resp: Response) => {
+    const products = await getAllProducts();
     resp.status(200).send({
         data: products,
         error: null
     });
 });
 
-router.get('/:id', (req: Request<{ id: string }, any, any, any>, resp: Response) => {
+router.get('/:id', async (req: Request<{ id: string }, any, any, any>, resp: Response) => {
     const id = req.params.id;
-    const product = getSingleProduct(id);
+    const product = await getSingleProduct(id);
     if (product) {
         resp.status(200).send({
             data: product,

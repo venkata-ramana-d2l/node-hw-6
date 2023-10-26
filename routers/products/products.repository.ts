@@ -1,11 +1,10 @@
-import products from '../../data/products';
-import { ProductEntity } from '../../schemas/product.entity';
+import Product from '../../models/product'
 
-export const getProducts: () => ProductEntity[] = () => {
-    return products;
+export const getProducts: () => any = async () => {
+    return await Product.find().exec();
 }
 
-export const getProduct: (productId: string) => ProductEntity | undefined = (productId: string) => {
-    return products.find(pro => pro.id === productId);
-
+export const getProduct: (productId: string) => any = async (productId: string) => {
+    console.log(await Product.findOne({id: productId}));
+    return await Product.findOne({id: productId}).exec();
 }

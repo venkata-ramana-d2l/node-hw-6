@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
-import users from '../data/users';
+import User from '../models/user';
 
-const userAuthenticationMiddleware = (req: Request, resp: Response, next: NextFunction) => {
+const userAuthenticationMiddleware = async (req: Request, resp: Response, next: NextFunction) => {
     const userId = req.headers['x-user-id'] as string;
     if (!userId) {
         resp.status(403).send({
@@ -11,7 +11,7 @@ const userAuthenticationMiddleware = (req: Request, resp: Response, next: NextFu
             }
           });
     } else {
-        if (isUserValid(userId)) {
+        if (await isUserValid(userId)) {
             next();
         } else {
             resp.status(401).send({
@@ -24,8 +24,8 @@ const userAuthenticationMiddleware = (req: Request, resp: Response, next: NextFu
     }
 }
 
-const isUserValid: (id: string) => boolean = (id: string) => {
-    return !!users.find(user => user.id === id);
+const isUserValid: (id: string) => any = async (id: string) => {
+    return !!await User.findOne({id}).exec();
 }
 
 export default userAuthenticationMiddleware;

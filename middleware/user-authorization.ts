@@ -1,31 +1,31 @@
-import { NextFunction, Request, Response } from 'express';
-import User from '../models/user';
+import * as jwt from "jsonwebtoken";
+import { Request, Response, NextFunction } from "express";
 
-const userAuthenticationMiddleware = async (req: Request, resp: Response, next: NextFunction) => {
-    const userId = req.headers['x-user-id'] as string;
-    if (!userId) {
-        resp.status(403).send({
-            "data": null,
-            "error": {
-              "message": "You must be authorized user"
-            }
-          });
-    } else {
-        if (await isUserValid(userId)) {
-            next();
-        } else {
-            resp.status(401).send({
-                "data": null,
-                "error": {
-                  "message": "User is not authorized"
-                }
-              });
-        }
+export interface CurrentUser {
+    id: string,
+    email: string,
+    role: string
+}
+
+export async function verifyToken (req: any, res: Response, next: NextFunction) {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+        return res.status(401).send("Token is required");
     }
-}
 
-const isUserValid: (id: string) => any = async (id: string) => {
-    return !!await User.findOne({id}).exec();
-}
+    const [tokenType, token] = authHeader.split(' ');
 
-export default userAuthenticationMiddleware;
+    if (tokenType !== 'Bearer') {
+        return res.status(403).send("Invalid Token");
+    }
+
+    try {
+        const user = jwt.verify(token, process.env.TOKEN_KEY!) as CurrentUser;
+
+        req.user = user;
+    } catch (err) {
+        return res.status(401).send("Invalid Token");
+    }
+    return next();
+}

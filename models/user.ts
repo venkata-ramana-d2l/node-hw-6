@@ -9,6 +9,16 @@ const userSchema = new mongoose.Schema<UserEntity>(
             required: true,
             immutable: true,
             default: () => crypto.randomUUID()
+        },
+        password: {
+            type: String
+        },
+        role: {
+            type: String
+        },
+        email: {
+            type: String,
+            unique: true
         }
     }
 );

@@ -7,6 +7,8 @@ import User from './models/user';
 import bcrypt from "bcrypt";
 import mongoose from 'mongoose';
 import * as jwt from "jsonwebtoken";
+import { logger } from './logger/logger';
+import morgan from 'morgan';
 
 dotEnvConfig();
 
@@ -14,13 +16,14 @@ mongoose.connect(process.env.DB_URL as string);
 
 const db = mongoose.connection;
 
-db.once('open', () => console.log('connected to db'));
+db.once('open', () => logger.info('connected to db'));
 
 db.on('error', (e) => console.log(e));
 
 const app = express();
 
 app.use(express.json());
+app.use(morgan('combined'));
 
 app.post("/api/auth/login", async (req, res) => {
     try {
@@ -89,10 +92,50 @@ app.post('/api/auth/register', async(req, res) => {
 
 });
 
-
 app.use('/api/products', verifyToken, productRouter);
 app.use('/api/profile/cart', verifyToken, cartRouter )
 
-app.listen(3000, () => {
-    console.log('Server is started');
+let connections: any[] = [];
+
+
+const server = app.listen(process.env.PORT, () => {
+    logger.info('Server started on port' + process.env.PORT)
 });
+
+server.on('connection', (connection) => {
+    // register connections
+    connections.push(connection);
+    
+    // remove/filter closed connections
+    connection.on('close', () => {
+      connections = connections.filter((currentConnection) => currentConnection !== connection);
+    });
+});
+
+function shutdown() {
+    logger.info('Received kill signal, shutting down gracefully');
+    
+    server.close(async () => {
+      logger.info('Closed out remaining connections');
+      await mongoose.connection.close();
+      process.exit(0);
+    });
+  
+    setTimeout(() => {
+      logger.error('Could not close connections in time, forcefully shutting down');
+      process.exit(1);
+    }, 20000);
+  
+    // end current connections
+    connections.forEach((connection) => connection.end());
+    
+    // then destroy connections
+    setTimeout(() => {
+      connections.forEach((connection) => connection.destroy());
+    }, 10000);
+  }
+
+
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
